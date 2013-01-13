@@ -1,0 +1,4 @@
+cron:
+- description: monitor rinderanspannung.de
+  url: /monitor/rinderanspannung.de
+  schedule: every 1 minutes
