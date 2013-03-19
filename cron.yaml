@@ -1,4 +1,4 @@
 cron:
-- description: monitor rinderanspannung.de
-  url: /monitor/rinderanspannung.de
+- description: monitor
+  url: /monitor
   schedule: every 1 minutes
