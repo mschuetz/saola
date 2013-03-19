@@ -3,6 +3,9 @@
 import webapp2
 import re
 import logging
+import string
+import time
+import sys
 from google.appengine.api import xmpp
 from google.appengine.ext import db
 from google.appengine.api import users
@@ -11,49 +14,47 @@ from google.appengine.api.urlfetch import fetch
 USERS = ('mschuetz@gmail.com',)
 
 class NotificationReceiver(db.Model):
-  name = db.StringProperty(required=True)
-  jid = db.StringProperty(required=True)
+    jid = db.StringProperty(required=True)
 
 class InviteHandler(webapp2.RequestHandler):
     def post(self):
-        user = users.get_current_user()
-        if user:
-            self.response.write("Welcome, %s! I'll send you an XMPP invite" % (user.nickname(),))
-            xmpp.send_invite(user.email())
-            recv = NotificationReceiver(name=user.nickname(), jid=user.email())
-            recv.put()
-        else:
-            self.response.write("<a href=\"%s\">Sign in or register</a>." % users.create_login_url("/"))
+        jid = self.request.get('jid')
+        self.response.write("Welcome, %s! I'll send you an XMPP invite" % jid)
+        xmpp.send_invite(jid)
+        recv = NotificationReceiver(jid=jid)
+        recv.put()
 
 def notify_all(msg, *args):
-    for user in USERS:
-        xmpp.send_message(user, msg % args)
+    for user in db.GqlQuery("select * from NotificationReceiver"):
+        xmpp.send_message(user.jid, msg % args)
 
 class MonitorHandler(webapp2.RequestHandler):
     def get(self):
-        for site in db.GqlQuery("select url from MonitorSubject"):
-            try: 
-                res = fetch(site.url)
+        for site in db.GqlQuery("select * from MonitorSubject"):
+            try:
+                url = '%s?%s' % (site.url, time.time())
+                logging.info('fetching %s', url)
+                res = fetch(url)
                 if res.status_code != 200:
                     notify_all('fetch(%s):\nstatus %s', site.url, res.status_code)
-            except e:
-                notify_all('fetch(%s):\nraised exception %s', site.url, e)
+            except:
+                notify_all('fetch(%s):\nraised exception %s', site.url, sys.exc_info()[0])
 
 class MonitorSubject(db.Model):
     url = db.StringProperty(required=True)
 
 def add_url(url):
     MonitorSubject(url=url).put()
-    'ok'
+    return 'ok'
 
 def remove_url(url):
     db.GqlQuery('delete from MonitorSubject where url=%s' % url)
-    'ok'
+    return 'ok'
 
 def list_urls():
-    string.join([site.url for site in db.GqlQuery('select from MonitorSubject')], '\n')
+    return string.join([site.url for site in db.GqlQuery('select * from MonitorSubject')], '\n')
 
-MSG_HANDLERS = {'^add (.*)$', add_url, '^rm (.*)$', remove_url, '^list', list_urls, '^ping', lambda : 'pong'}
+MSG_HANDLERS = { '^add (.*)$': add_url, '^rm (.*)$': remove_url, '^list': list_urls, '^ping': lambda : 'pong'}
 
 class MessageHandler(webapp2.RequestHandler):
     def post(self):
@@ -65,9 +66,7 @@ class MessageHandler(webapp2.RequestHandler):
             raise Exception('message from unauthorized sender')
         msg = message.body.lower()
         
-        if msg == 'ping':
-            message.reply('pong')
-        for regex, handler in MSG_HANDLERS:
+        for regex, handler in MSG_HANDLERS.iteritems():
             match = re.match(regex, msg)
             if match:
                 message.reply(handler(*match.groups()))
