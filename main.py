@@ -64,10 +64,9 @@ class MessageHandler(webapp2.RequestHandler):
         if jid_without_resource not in USERS:
             message.reply('you\'re not authorized to use this service')
             raise Exception('message from unauthorized sender')
-        msg = message.body.lower()
         
         for regex, handler in MSG_HANDLERS.iteritems():
-            match = re.match(regex, msg)
+            match = re.match(regex, message.body, re.IGNORECASE)
             if match:
                 message.reply(handler(*match.groups()))
             
