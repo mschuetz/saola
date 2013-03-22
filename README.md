@@ -3,17 +3,17 @@ A minimalistic web site monitoring tool for Google App Engine.
 [![Build Status](https://secure.travis-ci.org/mschuetz/saola.png)](http://travis-ci.org/mschuetz/saola)
 
 ## Setup
-Register a (free) GAE application, let's say you call it <MYAPP>.
+Register a (free) GAE application, let's say you call it &lt;MYAPP&gt;.
 
 	git clone https://github.com/mschuetz/saola.git
 	cd saola
 	sed -i bak -e s/INSERT_APP_NAME/<MYAPP>/ app.yaml
 	appcfg.py update .
 
-Open (as the application administrator) https://<MYAPP>.appsport.com/s/index.html in your browser, enter your Jabber account (JID). The application will send you an XMPP invite (i.e. add you to their contact list). From now on you'll be able to control it via Jabber messages. You can add multiple Jabber accounts through this form. 
+Open (as the application administrator) https://&lt;MYAPP&gt;.appspot.com/s/index.html in your browser, enter your Jabber account (JID). The application will send you an XMPP invite (i.e. add you to their contact list). From now on you'll be able to control it via Jabber messages. You can add multiple Jabber accounts through this form. 
 
 ## Jabber message command reference
-###	ping
+### ping
 Will respond with pong, if you've previously added your JID to the list of users.
 
 ### add HTTP_URL
